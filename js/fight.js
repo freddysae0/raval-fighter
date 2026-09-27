@@ -352,8 +352,14 @@ class Fight {
     FIGHT_REF = this;
     this.startRound(o.skipIntro);
   }
+  setAI(ai) {
+    const e = this.e; this.o.ai = ai; e.ctrl.p = ai; e.dmgMul = ai.dmg || 1;
+    e.spd = 1.35 * (e.def.speed || 1) * (ai.speed || 1);
+    const newMax = ai.hp || 100; e.pendingMax = newMax;
+  }
   startRound() {
     const c = this.center;
+    if (this.e.pendingMax) { this.e.maxHp = this.e.pendingMax; this.e.pendingMax = 0; }
     for (const [f, x, fc] of [[this.p, c - 60, 1], [this.e, c + 60, -1]]) {
       f.x = x; f.y = 0; f.vx = f.vy = 0; f.facing = fc; f.hp = f.hpShow = f.maxHp; f.setState('idle'); f.move = null; f.combo = 0; f.comboN = 0; f.inv = 0; f.flash = 0; f.stun = 0; f.projCD = 0; f.downKO = false; f.bounced = false;
     }

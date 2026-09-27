@@ -34,6 +34,8 @@ Eliges tu país → despedida en el aeropuerto (la abuela te da la chancla) → 
 
 Modo **Pelea rápida** en el menú para elegir rival directamente.
 
+**Dificultad:** Fácil / Medio / Difícil, seleccionable en el menú principal y en el menú de pausa (se aplica al momento y se guarda para la próxima vez).
+
 ## Estructura
 - `js/core.js` — canvas, utilidades, texto pixel, input (teclado/mando/táctil), efectos
 - `js/audio.js` — sintetizador chiptune (pulso/triángulo/ruido), SFX y secuenciador de música

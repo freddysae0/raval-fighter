@@ -10,7 +10,35 @@ const COUNTRIES = [
   { id: 'mx', name: 'MÉXICO', airport: 'AEROPUERTO DE LA CIUDAD DE MÉXICO', slang: 'güey', son: 'mijo' },
   { id: 'ec', name: 'ECUADOR', airport: 'AEROPUERTO MARISCAL SUCRE · QUITO', slang: 'ñaño', son: 'mijo' },
 ];
-const GAME = { country: COUNTRIES[0], stage: 0, tutorialShown: false, startTime: 0, continues: 0 };
+const GAME = { country: COUNTRIES[0], stage: 0, tutorialShown: false, startTime: 0, continues: 0, diff: 1 };
+try { const v = localStorage.getItem('raval.diff'); if (v === '0' || v === '1' || v === '2') GAME.diff = +v; } catch (e) { }
+const DIFFS = ['FÁCIL', 'MEDIO', 'DIFÍCIL'];
+const DIFF_COL = ['#8fe08a', '#ffd84a', '#ff5a5a'];
+function setDiff(d) {
+  GAME.diff = (d + 3) % 3; sfx('select');
+  try { localStorage.setItem('raval.diff', GAME.diff); } catch (e) { }
+}
+// scale a stage's (hard) AI tuning to the chosen difficulty
+function aiFor(st, d = GAME.diff) {
+  const a = st.ai; if (d === 2) return Object.assign({}, a);
+  const k = d === 0
+    ? { aggr: .62, block: .4, special: .7, jump: .8, combo: .35, dmg: .68, hp: .78, punish: .15, speed: .9, react: 9 }
+    : { aggr: .84, block: .72, special: .88, jump: .9, combo: .68, dmg: .85, hp: .9, punish: .5, speed: .96, react: 4 };
+  return Object.assign({}, a, {
+    aggr: a.aggr * k.aggr, block: a.block * k.block, special: a.special * k.special, jump: a.jump * k.jump, combo: a.combo * k.combo,
+    dmg: a.dmg * k.dmg, hp: Math.round(a.hp * k.hp), punish: (a.punish || .3) * k.punish, speed: a.speed * k.speed, react: a.react + k.react
+  });
+}
+// draws "< DIFICULTAD: MEDIO >" centred
+function drawDiffOption(g, y, sel, prefix = 'DIFICULTAD') {
+  const lbl = prefix + ': ', val = DIFFS[GAME.diff], full = (sel ? '◀ ' : '') + lbl + val + (sel ? ' ▶' : '');
+  const w = full.length * 8, x0 = W / 2 - w / 2;
+  let x = x0;
+  if (sel) { text(g, '◀ ', x, y, { color: '#ffd84a', outline: OUTL }); x += 16; }
+  text(g, lbl, x, y, { color: sel ? '#ffd84a' : '#c8c0e0', outline: OUTL }); x += lbl.length * 8;
+  text(g, val, x, y, { color: DIFF_COL[GAME.diff], outline: OUTL }); x += val.length * 8;
+  if (sel) text(g, ' ▶', x, y, { color: '#ffd84a', outline: OUTL });
+}
 const C = () => GAME.country;
 
 const STAGES = [
@@ -190,7 +218,7 @@ class BootScene {
 }
 class TitleScene {
   init() {
-    this.t = 0; this.sel = 0; this.items = ['HISTORIA', 'PELEA RÁPIDA', 'CONTROLES'];
+    this.t = 0; this.sel = 0; this.items = ['HISTORIA', 'PELEA RÁPIDA', 'DIFICULTAD', 'CONTROLES'];
     this.stage = TITLE_STAGE || (TITLE_STAGE = buildStage({ theme: 'joaquin', tod: 'night', seed: 777, arena: 600, crowd: 10 }));
     this.hero = new Actor(CH.hero, 0, 1, { anim: 'idle' }); this.capo = new Actor(CH.capo, 0, -1, { anim: 'idle' });
     playMusic('rumba'); ambient('street'); this.started = false;
@@ -198,13 +226,19 @@ class TitleScene {
   update() {
     this.t++; this.stage.update(); this.hero.update(); this.capo.update();
     if (!this.started) { if (Input.ok() || Input.hit('pause')) { this.started = true; sfx('confirm'); } return; }
-    if (Input.hit('up')) { this.sel = (this.sel + 2) % 3; sfx('select'); }
-    if (Input.hit('down')) { this.sel = (this.sel + 1) % 3; sfx('select'); }
+    const n = this.items.length;
+    if (Input.hit('up')) { this.sel = (this.sel + n - 1) % n; sfx('select'); }
+    if (Input.hit('down')) { this.sel = (this.sel + 1) % n; sfx('select'); }
+    if (this.sel === 2) {
+      if (Input.hit('left')) setDiff(GAME.diff - 1);
+      if (Input.hit('right') || Input.ok()) setDiff(GAME.diff + 1);
+      return;
+    }
     if (Input.ok()) {
       sfx('confirm');
       if (this.sel === 0) goFade(() => new CountryScene());
       if (this.sel === 1) goFade(() => new QuickScene());
-      if (this.sel === 2) goFade(() => new ControlsScene());
+      if (this.sel === 3) goFade(() => new ControlsScene());
     }
   }
   draw(g) {
@@ -222,7 +256,9 @@ class TitleScene {
     if (!this.started) { if ((this.t >> 5) % 2 === 0) text(g, 'PULSA ENTER', W / 2, 128, { align: 'center', color: '#fff', outline: OUTL, thick: 1 }); }
     else this.items.forEach((it, i) => {
       const y = 116 + i * 14, s = i === this.sel;
-      if (s) { g.fillStyle = 'rgba(255,216,74,.18)'; g.fillRect(W / 2 - 70, y - 3, 140, 13); text(g, '▶', W / 2 - 64, y, { color: '#ffd84a' }); }
+      if (s) { g.fillStyle = 'rgba(255,216,74,.18)'; g.fillRect(W / 2 - 100, y - 3, 200, 13); }
+      if (it === 'DIFICULTAD') { drawDiffOption(g, y, s); return; }
+      if (s) text(g, '▶', W / 2 - 64, y, { color: '#ffd84a' });
       text(g, it, W / 2, y, { align: 'center', color: s ? '#ffd84a' : '#c8c0e0', outline: OUTL });
     });
     tiny(g, '© 2026 RAVAL FIGHTER  ·  M: SONIDO', Math.round(W / 2 - tinyW('© 2026 RAVAL FIGHTER  ·  M: SONIDO') / 2), 216, 'rgba(255,255,255,.5)');
@@ -575,7 +611,7 @@ class StageScene extends Cutscene {
     this.hero.bag = false;
     if (!this.enemy) { this.enemy = new Actor(CH[st.enemy], this.arenaC + 60, -1, { anim: st.introAnim }); this.actors.push(this.enemy); }
     this.phase = 'fight'; this.caption = null;
-    this.fight = new Fight({ stage: this.world, center: this.arenaC, heroDef: CH.hero, enemyDef: CH[st.enemy], ai: st.ai, place: st.name, music: st.music, onEnd: w => this.endFight(w) });
+    this.fight = new Fight({ stage: this.world, center: this.arenaC, heroDef: CH.hero, enemyDef: CH[st.enemy], ai: aiFor(st), place: st.name, music: st.music, onEnd: w => this.endFight(w) });
     this.fight.camX = direct ? this.fight.camX : this.camX;
     if (this.idx === 0 && !GAME.tutorialShown && this.mode !== 'quick') { this.tut = 1; GAME.tutorialShown = true; }
     playMusic(st.music);
@@ -608,8 +644,14 @@ class StageScene extends Cutscene {
   }
   update() {
     if (this.paused) {
-      if (Input.hit('up') || Input.hit('down')) { this.pauseSel ^= 1; sfx('select'); }
-      if (Input.hit('pause')) { this.paused = false; sfx('back'); }
+      if (Input.hit('up')) { this.pauseSel = (this.pauseSel + 2) % 3; sfx('select'); }
+      if (Input.hit('down')) { this.pauseSel = (this.pauseSel + 1) % 3; sfx('select'); }
+      if (Input.hit('pause')) { this.paused = false; sfx('back'); return; }
+      if (this.pauseSel === 1) {
+        let ch = 0; if (Input.hit('left')) ch = -1; if (Input.hit('right') || Input.ok()) ch = 1;
+        if (ch) { setDiff(GAME.diff + ch); if (this.fight) this.fight.setAI(aiFor(this.st)); }
+        return;
+      }
       if (Input.ok()) { sfx('confirm'); if (this.pauseSel === 0) this.paused = false; else { this.paused = false; goFade(() => new TitleScene()); } }
       return;
     }
@@ -638,7 +680,12 @@ class StageScene extends Cutscene {
     if (this.paused) {
       drawFade(g, .6, '#05020a');
       textGrad(g, 'PAUSA', W / 2, 70, 24, ['#fff', '#ffd860', '#ff9030']);
-      ['CONTINUAR', 'SALIR AL MENÚ'].forEach((s, i) => text(g, (i === this.pauseSel ? '▶ ' : '  ') + s, W / 2, 112 + i * 16, { align: 'center', color: i === this.pauseSel ? '#ffd84a' : '#c8c0e0', outline: OUTL }));
+      ['CONTINUAR', 'DIFICULTAD', 'SALIR AL MENÚ'].forEach((s, i) => {
+        const y = 108 + i * 16, sel = i === this.pauseSel;
+        if (i === 1) { drawDiffOption(g, y, sel); return; }
+        text(g, (sel ? '▶ ' : '  ') + s, W / 2, y, { align: 'center', color: sel ? '#ffd84a' : '#c8c0e0', outline: OUTL });
+      });
+      if (this.pauseSel === 1) tiny(g, '← → CAMBIAR', Math.round(W / 2 - tinyW('← → CAMBIAR') / 2), 166, '#8a80b0');
     }
   }
 }
