@@ -30,7 +30,7 @@ Eliges tu país → despedida en el aeropuerto (la abuela te da la chancla) → 
 2. **El Latero** — Rambla del Raval (atardecer) — *"¡Cerveza, beer, un euro!"*
 3. **La Carterista** — Plaça dels Àngels / MACBA (anochecer) — *"Oye guapo, ¿me haces una foto?"*
 4. **El Relojero** — Carrer de Joaquín Costa (noche) — *"Amigo, amigo... ¿tiene hora?"*
-5. **El Capo** (jefe) — Carrer de la Riera Baixa (lluvia) — *"Amigo... ¿tú de dónde eres?"*
+5. **El Brayan** (jefe) — Carrer de la Riera Baixa (lluvia) — *"Amigo... ¿tú de dónde eres?"*
 
 Modo **Pelea rápida** en el menú para elegir rival directamente.
 
