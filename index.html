@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Raval Fighter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#07060b;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+  body{display:flex;align-items:center;justify-content:center}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;box-shadow:0 0 0 1px #1a1424,0 0 60px #000}
+  #touch{position:fixed;inset:0;pointer-events:none;display:none}
+  #touch.on{display:block}
+  .tb{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.12);
+      border:2px solid rgba(255,255,255,.35);color:#fff;font:10px 'Press Start 2P',monospace;display:flex;align-items:center;justify-content:center}
+  .tb.act{background:rgba(255,210,90,.45)}
+  #tstart{width:70px;height:26px;border-radius:13px;left:50%;top:8px;margin-left:-35px}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="touch">
+  <div class="tb" data-a="left"  style="left:14px;bottom:70px">&#9664;</div>
+  <div class="tb" data-a="right" style="left:130px;bottom:70px">&#9654;</div>
+  <div class="tb" data-a="up"    style="left:72px;bottom:128px">&#9650;</div>
+  <div class="tb" data-a="down"  style="left:72px;bottom:12px">&#9660;</div>
+  <div class="tb" data-a="punch" style="right:130px;bottom:70px">PUÑ</div>
+  <div class="tb" data-a="kick"  style="right:72px;bottom:12px">PAT</div>
+  <div class="tb" data-a="special" style="right:72px;bottom:128px">ESP</div>
+  <div class="tb" data-a="super" style="right:14px;bottom:70px">SUP</div>
+  <div class="tb" id="tstart" data-a="start">START</div>
+</div>
+<script src="js/core.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/world.js"></script>
+<script src="js/fight.js"></script>
+<script src="js/story.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
