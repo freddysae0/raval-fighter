@@ -16,31 +16,31 @@ const C = () => GAME.country;
 const STAGES = [
   {
     name: "CARRER DE L'HOSPITAL", theme: 'hospital', tod: 'afternoon', enemy: 'fumeta', seed: 1101, dist: '850 m', introAnim: 'smoke', music: 'fight',
-    ai: { aggr: .32, block: .18, special: .1, jump: .04, react: 18, range: 34, combo: .15, dmg: .72, speed: .9, hp: 90 },
+    ai: { aggr: .52, block: .42, special: .16, jump: .06, react: 12, range: 36, combo: .45, dmg: .95, speed: 1, hp: 110, punish: .45 },
     intro: () => [['fumeta', 'Amigo... amigo... ¿tiene cigarro?'], ['hero', `No fumo, ${C().slang}. Perdona.`], ['fumeta', '¿No? Pues entonces... me das la maleta y en paz.'], ['hero', 'Ni lo sueñes.']],
     outro: () => [['fumeta', 'Tranqui, tranqui... Bienvenido al Raval, bro.']]
   },
   {
     name: 'RAMBLA DEL RAVAL', theme: 'rambla', tod: 'sunset', enemy: 'latero', seed: 2202, dist: '600 m', introAnim: 'canUp', music: 'fight',
-    ai: { aggr: .42, block: .28, special: .14, jump: .06, react: 15, range: 34, combo: .28, dmg: .82, speed: 1, hp: 100 },
+    ai: { aggr: .6, block: .52, special: .2, jump: .08, react: 10, range: 36, combo: .55, dmg: 1.05, speed: 1.05, hp: 120, punish: .55 },
     intro: () => [['latero', '¡Cerveza, beer, un euro! ¡Agua, cerveza!'], ['hero', `No, gracias, ${C().slang}.`], ['latero', '¿Cómo que no? ¡Aquí todo el mundo compra!'], ['latero', 'Una o te la tiro.']],
     outro: () => [['latero', 'Vale, vale... dos por un euro. Última oferta.']]
   },
   {
     name: 'PLAÇA DELS ÀNGELS', theme: 'macba', tod: 'dusk', enemy: 'carterista', seed: 3303, dist: '400 m', introAnim: 'hipHand', music: 'fight',
-    ai: { aggr: .5, block: .34, special: .14, jump: .14, react: 12, range: 36, combo: .38, dmg: .9, speed: 1.2, hp: 100 },
+    ai: { aggr: .66, block: .56, special: .18, jump: .16, react: 8, range: 38, combo: .65, dmg: 1.1, speed: 1.3, hp: 125, punish: .65 },
     intro: () => [['carterista', 'Oye guapo, ¿me haces una foto?'], ['hero', 'Claro, ¿con qué móvil...? ¡Oye! ¡Esa es MI cartera!'], ['carterista', 'Uy. Pillada.'], ['carterista', 'Bueno... ¡pues ahora te la quito a golpes!']],
     outro: () => [['carterista', 'Toma tu cartera. Y tu móvil. Y... este otro móvil, que no sé de quién es.']]
   },
   {
     name: 'CARRER DE JOAQUÍN COSTA', theme: 'joaquin', tod: 'night', enemy: 'relojero', seed: 4404, dist: '200 m', introAnim: 'showWatch', music: 'fight',
-    ai: { aggr: .56, block: .44, special: .17, jump: .08, react: 10, range: 36, combo: .5, dmg: .98, speed: 1.1, hp: 105 },
+    ai: { aggr: .72, block: .66, special: .2, jump: .1, react: 6, range: 38, combo: .75, dmg: 1.2, speed: 1.2, hp: 135, punish: .75 },
     intro: () => [['relojero', 'Amigo, amigo... ¿tiene hora?'], ['hero', 'Sí, son las... ¡Oye! ¡Suelta mi muñeca!'], ['relojero', 'Bonito reloj. Ahora tiene hora... pero es mía.']],
     outro: () => [['relojero', 'Toma, llévate uno. Es Rolex. Casi.']]
   },
   {
     name: 'CARRER DE LA RIERA BAIXA', theme: 'riera', tod: 'rain', enemy: 'capo', seed: 5505, dist: '20 m', introAnim: 'knuckles', music: 'boss', boss: true,
-    ai: { aggr: .62, block: .52, special: .14, jump: .1, react: 8, range: 38, combo: .6, dmg: 1.08, speed: 1.05, hp: 125 },
+    ai: { aggr: .8, block: .74, special: .18, jump: .12, react: 5, range: 40, combo: .85, dmg: 1.3, speed: 1.15, hp: 160, punish: .85 },
     intro: () => [['capo', 'Amigo... ¿tú de dónde eres?'], ['hero', `De ${C().name.charAt(0) + C().name.slice(1).toLowerCase()}. ¿Algún problema?`], ['capo', 'Aquí en el Raval se paga peaje. Y tú no has pagado.'], ['hero', 'Mi Airbnb está justo ahí. Nadie me va a parar.'], ['capo', 'Eso ya lo veremos, primo.']],
     outro: () => [['capo', 'Respeto, ' + C().slang + '. Tienes calle. Bienvenido al barrio.']]
   },

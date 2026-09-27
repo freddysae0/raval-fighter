@@ -267,6 +267,12 @@ class AICtrl {
     // chain combos
     if (me.state === 'attack') { if (me.hitConfirmed && me.move && me.move.cancel && Math.random() < P.combo) { if (me.move.cancel.includes('cross')) this.pr[Math.random() < .6 ? 'punch' : 'kick'] = 1; else this.pr.kick = 1; this.h.down = me.move.crouch ? 1 : 0; } return; }
     if (!['idle', 'walk', 'crouch'].includes(me.state)) return;
+    // anti-air: opponent jumping in close -> kick them out of the air
+    if ((o.state === 'jump' || (o.move && o.move.air)) && dist < 70 && o.vy > -1 && Math.random() < (P.punish || .3)) { this.pr.kick = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = 6; return; }
+    // punish: opponent stuck in recovery of a whiffed / blocked attack within reach
+    if (o.state === 'attack' && o.move && !o.move.air && o.mt > o.move.s + o.move.a && dist < P.range + 14 && Math.random() < (P.punish || .3)) { this.pr[Math.random() < .5 ? 'punch' : 'kick'] = 1; this.h = { fwd: dist > P.range ? 1 : 0, back: 0, up: 0, down: 0 }; this.pt = 4; return; }
+    // punish a landing jump or a getup whiff
+    if (o.state === 'idle' && o.st < 4 && dist < P.range + 6 && Math.random() < (P.punish || .3) * .6) { this.pr.punch = 1; this.pt = 4; return; }
     if (this.pt > 0) { this.pt--; if (this.h.up) this.h.up = 0; return; }
     const r = Math.random();
     if (me.meter >= 100 && me.moves.super && dist < 140 && r < .08) { this.pr.super = 1; return; }
