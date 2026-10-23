@@ -10,7 +10,8 @@ ctx.imageSmoothingEnabled = false;
 
 function fitCanvas() {
   const s0 = Math.min(innerWidth / W, innerHeight / H);
-  const s = s0 >= 2 ? Math.floor(s0) : s0;
+  // Dentro de un iframe (la web promocional) llena todo el hueco; suelto, escala entera para que el pixel quede nítido.
+  const s = (window.self !== window.top || s0 < 2) ? s0 : Math.floor(s0);
   cv.style.width = Math.floor(W * s) + 'px';
   cv.style.height = Math.floor(H * s) + 'px';
 }
