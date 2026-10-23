@@ -174,53 +174,73 @@ function tiny(g, str, x, y, col, sc = 1) {
 }
 const tinyW = (s, sc = 1) => String(s).length * 4 * sc - sc;
 
-// ---------- input ----------
-const Input = { held: {}, pressed: {}, _pad: {} };
+// ---------- input: solo teclado y ratón (los mismos controles que la versión de Godot) ----------
+//  A/D andar (sin girarse) · ratón: mirar al cursor · Shift correr · Espacio saltar · W mirar arriba (W + clic izq. = gancho)
+//  S agacharse · clic izq. puño · clic der. patada · rueda ↑ chancla · rueda ↓ cargar energía · F súper
+//  Enter confirmar · Esc/P pausa · M sonido. Las flechas solo sirven para moverse por los menús (Input.nav).
+const Input = { held: {}, pressed: {}, mx: W / 2, my: H / 2, mouse: false, inside: false };
 const KEYS = {
-  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
-  KeyJ: 'punch', KeyZ: 'punch', KeyK: 'kick', KeyX: 'kick', KeyL: 'special', KeyC: 'special', KeyI: 'super', KeyV: 'super',
-  Enter: 'start', Space: 'start', Escape: 'pause', KeyP: 'pause', KeyM: 'mute'
+  KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', Space: 'jump', ShiftLeft: 'run', ShiftRight: 'run', KeyF: 'super',
+  Enter: 'start', NumpadEnter: 'start', Escape: 'pause', KeyP: 'pause', KeyM: 'mute',
+  ArrowLeft: 'navLeft', ArrowRight: 'navRight', ArrowUp: 'navUp', ArrowDown: 'navDown'
 };
+const MOUSE_BTN = { 0: 'punch', 2: 'kick' };
+const unlock = () => { if (typeof unlockAudio === 'function') unlockAudio(); };
 function press(a) { if (!Input.held[a]) Input.pressed[a] = true; Input.held[a] = true; }
 function release(a) { Input.held[a] = false; }
+// la rueda no se mantiene: cuenta como pulsar y soltar en el mismo frame
+function tap(a) { Input.pressed[a] = true; }
 addEventListener('keydown', e => {
   const a = KEYS[e.code]; if (a) { e.preventDefault(); if (!e.repeat) press(a); }
-  if (typeof unlockAudio === 'function') unlockAudio();
+  unlock();
 });
 addEventListener('keyup', e => { const a = KEYS[e.code]; if (a) release(a); });
 addEventListener('blur', () => { Input.held = {}; });
+// ratón -> coordenadas del juego (400x225), teniendo en cuenta el escalado del canvas (fitCanvas)
+function mouseAt(e) {
+  const r = cv.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  Input.mx = clamp((e.clientX - r.left) * W / r.width, 0, W - 1);
+  Input.my = clamp((e.clientY - r.top) * H / r.height, 0, H - 1);
+  Input.mouse = true;
+}
+const onLink = e => e.target && e.target.closest && e.target.closest('a');
+addEventListener('mousemove', e => { mouseAt(e); Input.inside = !onLink(e); });
+cv.addEventListener('mouseleave', () => { Input.inside = false; });
+document.addEventListener('mouseleave', () => { Input.inside = false; });
+addEventListener('mousedown', e => {
+  if (onLink(e)) return;
+  // un clic dentro le da el foco al juego (dentro de un iframe, sin foco no llegan teclado ni rueda)
+  cv.focus({ preventScroll: true }); try { window.focus(); } catch (_) { }
+  mouseAt(e); Input.inside = true;
+  const a = MOUSE_BTN[e.button]; if (a) { e.preventDefault(); press(a); }
+  unlock();
+});
+addEventListener('mouseup', e => { const a = MOUSE_BTN[e.button]; if (a) release(a); });
+addEventListener('contextmenu', e => { if (!onLink(e)) e.preventDefault(); });
+addEventListener('wheel', e => {
+  // con el juego enfocado la rueda es del juego, no de la página de fuera
+  if (!document.hasFocus()) return;
+  e.preventDefault();
+  if (Math.abs(e.deltaY) < 1) return;
+  tap(e.deltaY < 0 ? 'special' : 'charge');
+}, { passive: false });
 Input.hit = a => !!Input.pressed[a];
+Input.nav = d => !!(Input.pressed[d] || Input.pressed['nav' + d[0].toUpperCase() + d.slice(1)]);
 Input.ok = () => !!(Input.pressed.start || Input.pressed.punch);
 Input.endFrame = () => { Input.pressed = {}; };
-Input.poll = () => {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = pads && [...pads].find(p => p);
-  if (!gp) return;
-  const b = i => gp.buttons[i] && gp.buttons[i].pressed;
-  const st = {
-    left: b(14) || gp.axes[0] < -0.5, right: b(15) || gp.axes[0] > 0.5, up: b(12) || gp.axes[1] < -0.5, down: b(13) || gp.axes[1] > 0.5,
-    punch: b(2), kick: b(0), special: b(3) || b(1), super: b(5) || b(7), start: b(9), pause: b(8)
-  };
-  for (const k in st) {
-    if (st[k] && !Input._pad[k]) press(k);
-    if (!st[k] && Input._pad[k]) release(k);
-    Input._pad[k] = st[k];
-  }
-};
-// touch
-(function setupTouch() {
-  const coarse = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
-  const root = document.getElementById('touch'); if (!root || !coarse) return;
-  root.classList.add('on');
-  root.querySelectorAll('.tb').forEach(el => {
-    const a = el.dataset.a;
-    const on = e => { e.preventDefault(); press(a); el.classList.add('act'); if (typeof unlockAudio === 'function') unlockAudio(); };
-    const off = e => { e.preventDefault(); release(a); el.classList.remove('act'); };
-    el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off);
-    el.addEventListener('pointercancel', off); el.addEventListener('pointerleave', off);
-  });
-})();
-cv.addEventListener('pointerdown', () => { if (typeof unlockAudio === 'function') unlockAudio(); });
+// lado (1 derecha, -1 izquierda) del cursor respecto a una x de pantalla; 0 = ratón sin usar o justo encima
+Input.side = sx => { if (!Input.mouse) return 0; const dx = Input.mx - sx; return Math.abs(dx) < 4 ? 0 : Math.sign(dx); };
+// mira de pixel art (7x7 con contorno) en lugar del cursor del sistema
+function drawCrosshair(g) {
+  if (!Input.mouse || !Input.inside) return;
+  const x = Math.round(Input.mx), y = Math.round(Input.my);
+  g.fillStyle = '#130b16';
+  for (const [rx, ry, rw, rh] of [[-4, -1, 3, 3], [2, -1, 3, 3], [-1, -4, 3, 3], [-1, 2, 3, 3]]) g.fillRect(x + rx, y + ry, rw, rh);
+  g.fillStyle = '#ffffff';
+  for (const [rx, ry, rw, rh] of [[-3, 0, 2, 1], [2, 0, 2, 1], [0, -3, 1, 2], [0, 2, 1, 2]]) g.fillRect(x + rx, y + ry, rw, rh);
+  g.fillStyle = '#ffd84a'; g.fillRect(x, y, 1, 1);
+}
 
 // ---------- global screen fx ----------
 const FX = { shake: 0, mag: 0, flash: 0, flashCol: '#fff', ox: 0, oy: 0 };

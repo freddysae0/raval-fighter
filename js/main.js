@@ -4,7 +4,6 @@
 // ============================================================
 let GT = 0;
 function tick() {
-  Input.poll();
   if (Input.hit('mute')) toggleMute();
   try { SCN.update(); } catch (e) { console.error(e); }
   Fade.update(); FX.update();
@@ -18,6 +17,7 @@ function render() {
   if (FX.flash > 0) { ctx.globalAlpha = Math.min(1, FX.flash / 4) * .7; ctx.fillStyle = FX.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
   drawFade(ctx, Fade.a, Fade.col);
   if (AU.muted) tiny(ctx, 'MUTE', W - 20, H - 7, '#ff8080');
+  drawCrosshair(ctx);
 }
 let last = performance.now(), acc = 0;
 const STEP = 1000 / 60;

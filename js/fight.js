@@ -10,7 +10,12 @@ const MOVES = {
   sweep:  { anim: 'sweep', s: 8, a: 4, r: 20, dmg: 8, hs: 20, bs: 10, push: 2, box: [2, -14, 38, 12], lvl: 'low', crouch: 1, kd: 1, snd: 'hitM', stop: 7, meter: 8 },
   jkick:  { anim: 'jkick', s: 4, a: 60, r: 0, dmg: 9, hs: 18, bs: 10, push: 2.6, box: [2, -38, 28, 16], lvl: 'high', air: 1, snd: 'hitM', stop: 7, meter: 7 },
   jpunch: { anim: 'jpunch', s: 4, a: 60, r: 0, dmg: 7, hs: 16, bs: 9, push: 2.2, box: [4, -46, 24, 14], lvl: 'high', air: 1, snd: 'hitL', stop: 6, meter: 6 },
+  // gancho (W + clic izq.): golpe hacia arriba, más lento que el jab; alcanza por encima de la cabeza (antiaéreo)
+  upper:  { anim: 'gancho', s: 6, a: 4, r: 16, dmg: 9, hs: 18, bs: 10, push: 2.8, box: [2, -74, 22, 30], lvl: 'mid', snd: 'hitM', stop: 8, meter: 8 },
 };
+// cargar energía (rueda abajo): quieto y concentrado, llena la barra del súper despacio; mientras carga no puede
+// bloquear y recibe más daño. Cada golpe de rueda mantiene la concentración CHARGE_FRAMES frames (como en Godot).
+const CHARGE_FRAMES = 20, CHARGE_START = 20, CHARGE_RATE = 0.12, CHARGE_DMG = 1.3, RUN_MUL = 1.75;
 const SPECIALS = {
   hero: { special: { anim: 'throw', s: 11, a: 0, r: 22, spawn: { at: 11, type: 'chancla' }, cd: 40, snd: 'throw' }, super: { name: '¡FURIA LATINA!', dmg: 3, fin: 12 } },
   fumeta: { special: { anim: 'blow', s: 15, a: 0, r: 23, spawn: { at: 15, type: 'smoke' }, cd: 110, snd: 'smoke' } },
@@ -32,7 +37,8 @@ class Fighter {
   }
   get grounded() { return this.y >= 0 && !['jump', 'knock', 'ko'].includes(this.state) && !(this.move && this.move.air); }
   setState(s) { if (this.state !== s) { this.state = s; this.st = 0; } }
-  face() { if (this.opp) { const d = this.opp.x - this.x; if (Math.abs(d) > 2) this.facing = Math.sign(d); } }
+  // el jugador mira hacia el cursor (ctrl.mirada); si no ha usado el ratón, y la IA siempre, mira al rival
+  face() { if (this.ctrl && this.ctrl.mirada) { this.facing = this.ctrl.mirada; return; } if (this.opp) { const d = this.opp.x - this.x; if (Math.abs(d) > 2) this.facing = Math.sign(d); } }
   hurtbox() {
     const s = this.s;
     if (['knock', 'down', 'ko', 'getup'].includes(this.state) || this.inv > 0) return null;
@@ -72,15 +78,17 @@ class Fighter {
         const down = c.down();
         if (c.press('super') && this.meter >= 100 && this.moves.super) { F.startSuper(this); break; }
         if ((c.press('special') || (c.press('punch') && c.qcf && c.qcf())) && this.moves.special && this.projCD <= 0 && (!this.moves.special.spawn || !F.projs.some(p => p.owner === this))) { this.doMove('special', F); break; }
-        if (c.press('punch')) { this.doMove(down ? 'cpunch' : 'jab'); sfx('whiff'); break; }
+        if (c.press('charge')) { this.startCharge(F); break; }
+        if (c.press('punch')) { this.doMove(down ? 'cpunch' : c.lookUp && c.lookUp() ? 'upper' : 'jab'); sfx('whiff'); break; }
         if (c.press('kick')) { this.doMove(down ? 'sweep' : 'kick'); sfx('whiffH'); break; }
         if (c.up()) { this.jump(c.fwd() ? 1 : c.back() ? -1 : 0); break; }
         if (down) { this.setState('crouch'); this.vx = 0; break; }
-        if (c.fwd()) { this.setState('walk'); this.walkDir = 1; this.vx = this.facing * this.spd; }
-        else if (c.back()) { this.setState('walk'); this.walkDir = -1; this.vx = -this.facing * this.spd * 0.78; }
+        if (c.fwd()) { this.setState('walk'); this.walkDir = 1; this.running = !!(c.run && c.run()); this.vx = this.facing * this.spd * (this.running ? RUN_MUL : 1); }
+        else if (c.back()) { this.setState('walk'); this.walkDir = -1; this.running = false; this.vx = -this.facing * this.spd * 0.78; }
         else { this.setState('idle'); this.vx = 0; }
         break;
       }
+      case 'charge': this.updateCharge(F); break;
       case 'jump': {
         this.vy += GRAV; this.y += this.vy;
         if (act && c && !this.airAtk && this.st > 3) {
@@ -114,6 +122,29 @@ class Fighter {
     }
     this.x += this.vx;
     if (this.state !== 'knock' && this.state !== 'ko' && this.state !== 'jump' && !(this.move && (this.move.air || this.move.hop) && this.state === 'attack') && this.y < 0 && this.state !== 'hitstun' && this.state !== 'super') { this.y = Math.min(0, this.y + 4); }
+  }
+  startCharge(F) {
+    this.setState('charge'); this.vx = 0; this.chargeT = CHARGE_FRAMES; this.running = false;
+    sfx('blip', 220 + this.meter * 6); F.dust(this.x, 4);
+  }
+  updateCharge(F) {
+    const c = this.ctrl; this.vx = 0; this.chargeT--;
+    if (this.st >= CHARGE_START) this.meter = Math.min(100, this.meter + CHARGE_RATE);
+    if (F.phase !== 'fight' || !c) { this.setState('idle'); return; }
+    if (c.press('charge')) { this.chargeT = CHARGE_FRAMES; if (this.st % 8 === 0) sfx('blip', 220 + this.meter * 6); }
+    // cualquier otra cosa corta la carga
+    if (this.chargeT <= 0 || c.fwd() || c.back() || c.up() || c.press('punch') || c.press('kick')) this.setState('idle');
+  }
+  // aura de la carga: llamas de pixel que suben alrededor del cuerpo (detrás del sprite)
+  drawAura(g, sx, sy) {
+    const s = this.s, alto = 64 * s, w = 16 * s, k = this.meter / 100;
+    const col = mix('#6ad8ff', '#ffe14f', k), hi = lt(col, .5);
+    for (let i = 0; i < 9; i++) {
+      const fx = Math.round(sx - w + i * (w * 2 / 8));
+      const h = Math.round(alto * (0.55 + 0.45 * Math.abs(Math.sin(this.st * 0.3 + i * 1.7))));
+      g.fillStyle = col; g.fillRect(fx - 1, sy - h, 3, h);
+      g.fillStyle = hi; g.fillRect(fx, sy - h, 1, Math.max(1, h >> 2));
+    }
   }
   startAir(name) { const m = this.moves[name]; this.move = m; this.moveName = name; this.mt = 0; this.hitDone = false; this.hitConfirmed = false; this.state = 'attack'; }
   land(F) {
@@ -187,7 +218,8 @@ class Fighter {
     if (blink && expr === 'normal') expr = 'blink';
     switch (s) {
       case 'idle': return ['idle', this.st, expr];
-      case 'walk': return [this.walkDir > 0 ? 'walkF' : 'walkB', this.st, expr];
+      case 'walk': return [this.running ? 'run' : this.walkDir > 0 ? 'walkF' : 'walkB', this.st, expr];
+      case 'charge': return ['knuckles', this.st, 'angry'];
       case 'crouch': return ['crouch', this.st, expr];
       case 'jump': return ['jump', this.st, expr];
       case 'attack': return [this.move.anim, this.mt, 'angry'];
@@ -214,6 +246,7 @@ class Fighter {
     const sx = this.x - camX, sy = GROUND + this.y;
     const sh = clamp(1 + this.y / 90, .4, 1);
     shadow(g, sx, GROUND, 26 * sh * this.s, .4 * sh);
+    if (this.state === 'charge') this.drawAura(g, Math.round(sx), Math.round(sy));
     const img = this.flash > 0 && this.flash % 2 === 1 ? whiteOf(spr) : (this.inv > 0 && this.state === 'getup' && this.st % 4 < 2 ? tintedOf(spr, '#ffffff', .3) : null);
     drawSpr(g, spr, sx, sy, this.facing, img);
     if (this.def.id === 'fumeta' && Math.random() < .08 && this.state !== 'down') FIGHT_REF && FIGHT_REF.smokePuff(this.x + this.facing * 10, this.y - 66);
@@ -221,17 +254,24 @@ class Fighter {
 }
 let FIGHT_REF = null;
 
-// ---------- player controller ----------
+// ---------- player controller (teclado y ratón) ----------
+// A/D andan sin girar: el luchador mira hacia el lado del cursor (mirada), y "adelante"/"atrás" son relativos a
+// esa mirada (con el cursor detrás, alejarse de él es retroceder = bloquear). Espacio salta, W mira arriba.
 class PadCtrl {
-  constructor(f) { this.f = f; this.hist = []; }
-  update() {
-    const f = this.f, L = Input.held.left, Rr = Input.held.right, U = Input.held.up, D = Input.held.down;
-    const fw = f.facing > 0 ? Rr : L, bk = f.facing > 0 ? L : Rr;
-    let n = 5; if (D && bk) n = 1; else if (D && fw) n = 3; else if (D) n = 2; else if (U) n = 8; else if (fw) n = 6; else if (bk) n = 4;
+  constructor(f) { this.f = f; this.hist = []; this.mirada = 0; }
+  update(F) {
+    const f = this.f;
+    const side = Input.side(f.x - (F ? F.camX : 0));
+    if (side) this.mirada = side;
+    const D = Input.held.down, fw = this.fwd(), bk = this.back();
+    let n = 5; if (D && bk) n = 1; else if (D && fw) n = 3; else if (D) n = 2; else if (Input.held.up) n = 8; else if (fw) n = 6; else if (bk) n = 4;
     this.hist.push(n); if (this.hist.length > 24) this.hist.shift();
-    this._fw = fw; this._bk = bk;
   }
-  fwd() { return this._fw; } back() { return this._bk; } up() { return !!Input.held.up; } down() { return !!Input.held.down; }
+  // se calculan al momento con la mirada actual, para que girar con el ratón no deje un frame andando al revés
+  fwd() { return !!(this.f.facing > 0 ? Input.held.right : Input.held.left); }
+  back() { return !!(this.f.facing > 0 ? Input.held.left : Input.held.right); }
+  up() { return !!(Input.held.jump || Input.hit('jump')); } down() { return !!Input.held.down; }
+  lookUp() { return !!Input.held.up; } run() { return !!Input.held.run; }
   press(b) { return Input.hit(b); }
   qcf() { const h = this.hist.slice(-16); let s = 0; for (const n of h) { if (s === 0 && n === 2) s = 1; else if (s === 1 && n === 3) s = 2; else if (s === 2 && n === 6) s = 3; } return s === 3; }
 }
@@ -271,6 +311,12 @@ class AICtrl {
     if ((o.state === 'jump' || (o.move && o.move.air)) && dist < 70 && o.vy > -1 && Math.random() < (P.punish || .3)) { this.pr.kick = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = 6; return; }
     // punish: opponent stuck in recovery of a whiffed / blocked attack within reach
     if (o.state === 'attack' && o.move && !o.move.air && o.mt > o.move.s + o.move.a && dist < P.range + 14 && Math.random() < (P.punish || .3)) { this.pr[Math.random() < .5 ? 'punch' : 'kick'] = 1; this.h = { fwd: dist > P.range ? 1 : 0, back: 0, up: 0, down: 0 }; this.pt = 4; return; }
+    // punish an opponent charging energy (can't block): close in and hit
+    if (o.state === 'charge' && dist < 160 && Math.random() < (P.punish || .3)) {
+      if (dist > P.range) { this.h = { fwd: 1, back: 0, up: 0, down: 0 }; this.pt = 6; }
+      else { this.pr[Math.random() < .5 ? 'punch' : 'kick'] = 1; this.h = { fwd: 0, back: 0, up: 0, down: 0 }; this.pt = 4; }
+      return;
+    }
     // punish a landing jump or a getup whiff
     if (o.state === 'idle' && o.st < 4 && dist < P.range + 6 && Math.random() < (P.punish || .3) * .6) { this.pr.punch = 1; this.pt = 4; return; }
     if (this.pt > 0) { this.pt--; if (this.h.up) this.h.up = 0; return; }
@@ -398,7 +444,7 @@ class Fight {
     const wasStun = def.state === 'hitstun' || def.state === 'knock';
     att.comboN = wasStun ? att.comboN + 1 : 1; att.combo = att.comboN; if (att.combo >= 2) att.comboShow = 70;
     const scale = Math.max(.5, 1 - (att.comboN - 1) * .12);
-    const dmg = m.dmg * scale * (att.isP ? 1 : att.dmgMul);
+    const dmg = m.dmg * scale * (att.isP ? 1 : att.dmgMul) * (def.state === 'charge' ? CHARGE_DMG : 1);
     def.hp = Math.max(0, def.hp - dmg); def.flash = 6;
     att.meter = Math.min(100, att.meter + (m.meter || 5)); def.meter = Math.min(100, def.meter + dmg * .7);
     att.hitConfirmed = true;

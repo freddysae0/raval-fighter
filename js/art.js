@@ -344,6 +344,11 @@ const SUPA = X(JAB_A, { t: 24 }), SUPB = X(CROSS_A, { t: 26 });
 defA('rush', 1, [[SUPA, 3], [SUPB, 3]]);
 const UPPER = X(STANCE, { t: -8, ua2: 172, fa2: 178, ua1: 20, fa1: 120, th1: -10, sh1: -20, th2: 20, sh2: 0 });
 defA('upper', 0, [[X(CR, { ua2: 60, fa2: 100 }), 4], [UPPER, 6], [UPPER, 20], [STANCE, 1]]);
+// gancho del jugador (W + clic izq.), con el frame data de MOVES.upper
+atk('gancho', X(CR, { ua2: 60, fa2: 100 }), UPPER, 6, 4, 16, STANCE);
+// correr (Shift): zancada larga e inclinada hacia delante
+const RUN1 = X(DASH, { t: 22, th1: -24, sh1: -40, th2: 44, sh2: 10 }), RUN2 = X(DASH, { t: 20, th1: 30, sh1: -10, th2: -10, sh2: -60 });
+defA('run', 1, [[RUN1, 5], [X(DASH, { t: 24, th1: 6, sh1: -50, th2: 18, sh2: -20 }), 5], [RUN2, 5], [X(DASH, { t: 24, th1: 18, sh1: -40, th2: 6, sh2: -30 }), 5]]);
 const SNATCH = X(STANCE, { t: 34, hx: 4, ua2: 92, fa2: 92, h2: 'open', th1: -30, sh1: -50, th2: 55, sh2: 25 });
 defA('snatch', 0, [[STANCE, 4], [X(STANCE, { t: -6, ua2: 20, fa2: 60 }), 4], [SNATCH, 14], [SNATCH, 7], [STANCE, 9], [STANCE, 1]]);
 const POUND_U = P({ air: 1, t: -5, ua1: 170, fa1: 178, ua2: 172, fa2: 178, th1: 40, sh1: -30, th2: 60, sh2: -10 });

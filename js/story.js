@@ -227,11 +227,11 @@ class TitleScene {
     this.t++; this.stage.update(); this.hero.update(); this.capo.update();
     if (!this.started) { if (Input.ok() || Input.hit('pause')) { this.started = true; sfx('confirm'); } return; }
     const n = this.items.length;
-    if (Input.hit('up')) { this.sel = (this.sel + n - 1) % n; sfx('select'); }
-    if (Input.hit('down')) { this.sel = (this.sel + 1) % n; sfx('select'); }
+    if (Input.nav('up')) { this.sel = (this.sel + n - 1) % n; sfx('select'); }
+    if (Input.nav('down')) { this.sel = (this.sel + 1) % n; sfx('select'); }
     if (this.sel === 2) {
-      if (Input.hit('left')) setDiff(GAME.diff - 1);
-      if (Input.hit('right') || Input.ok()) setDiff(GAME.diff + 1);
+      if (Input.nav('left')) setDiff(GAME.diff - 1);
+      if (Input.nav('right') || Input.ok()) setDiff(GAME.diff + 1);
       return;
     }
     if (Input.ok()) {
@@ -253,7 +253,7 @@ class TitleScene {
     textGrad(g, 'FIGHTER', W / 2, 64 + bob, 24, ['#ffffff', '#ffb0b8', '#ff4a5a', '#b01830']);
     text(g, 'UNA HISTORIA DE BARRIO', W / 2, 94, { align: 'center', color: '#c8c0e0', outline: OUTL });
     drawFlag(g, 'es', W / 2 - 58, 12, 12, 8, this.t, 1); drawFlag(g, 'cat', W / 2 + 46, 12, 12, 8, this.t, 1);
-    if (!this.started) { if ((this.t >> 5) % 2 === 0) text(g, 'PULSA ENTER', W / 2, 128, { align: 'center', color: '#fff', outline: OUTL, thick: 1 }); }
+    if (!this.started) { if ((this.t >> 5) % 2 === 0) text(g, 'HAZ CLIC O PULSA ENTER', W / 2, 128, { align: 'center', color: '#fff', outline: OUTL, thick: 1 }); }
     else this.items.forEach((it, i) => {
       const y = 116 + i * 14, s = i === this.sel;
       if (s) { g.fillStyle = 'rgba(255,216,74,.18)'; g.fillRect(W / 2 - 100, y - 3, 200, 13); }
@@ -272,9 +272,14 @@ class ControlsScene {
     g.fillStyle = '#0e0a1c'; g.fillRect(0, 0, W, H);
     for (let y = 0; y < H; y += 4) { g.fillStyle = '#130e24'; g.fillRect(0, y, W, 2); }
     textGrad(g, 'CONTROLES', W / 2, 12, 16, ['#fff', '#ffd860', '#ff9030']);
-    const rows = [['← →', 'MOVERSE (ATRÁS = BLOQUEAR)'], ['↑', 'SALTAR'], ['↓', 'AGACHARSE (↓+ATRÁS = BLOQ. BAJO)'], ['J / Z', 'PUÑETAZO  (J,J = COMBO)'], ['K / X', 'PATADA  (↓+K = BARRIDO)'], ['L / C', 'ESPECIAL: ¡CHANCLAZO!'], ['↓↘→ + J', 'ESPECIAL (MODO PRO)'], ['I / V', 'SUPER (BARRA AZUL LLENA)'], ['ENTER', 'CONFIRMAR / PASAR DIÁLOGO'], ['ESC / P', 'PAUSA · SALTAR ESCENA'], ['M', 'SONIDO ON/OFF']];
-    rows.forEach(([k, v], i) => { const y = 38 + i * 15; text(g, k, 110, y, { align: 'right', color: '#ffd84a' }); text(g, v, 122, y, { color: '#e8e0ff' }); });
-    tiny(g, 'TAMBIÉN FUNCIONA CON MANDO Y PANTALLA TÁCTIL', Math.round(W / 2 - tinyW('TAMBIÉN FUNCIONA CON MANDO Y PANTALLA TÁCTIL') / 2), 208, '#8a80b0');
+    // la misma tabla que la pantalla de controles de la versión de Godot (scripts/historia/controles.gd)
+    const rows = [['A / D', 'MOVERSE (ATRÁS = BLOQUEAR)'], ['RATÓN', 'MIRAR AL CURSOR'], ['SHIFT', 'CORRER'], ['ESPACIO', 'SALTAR'],
+      ['W', 'MIRAR · W + CLIC IZQ. = GANCHO'], ['S', 'AGACHARSE (S+ATRÁS = BLOQ. BAJO)'], ['CLIC IZQ.', 'PUÑETAZO (×2 = COMBO)'], ['CLIC DER.', 'PATADA (S + CLIC DER. = BARRIDO)'],
+      ['RUEDA ↑', '¡CHANCLAZO!'], ['RUEDA ↓', 'CARGAR ENERGÍA (LENTO Y ARRIESGADO)'], ['F', 'SÚPER (BARRA AZUL LLENA)'],
+      ['ENTER', 'CONFIRMAR / PASAR DIÁLOGO'], ['ESC / P', 'PAUSA · SALTAR ESCENA'], ['M', 'SONIDO ON/OFF']];
+    rows.forEach(([k, v], i) => { const y = 34 + i * 12; text(g, k, 100, y, { align: 'right', color: '#ffd84a' }); text(g, v, 110, y, { color: '#e8e0ff' }); });
+    const pie = 'SOLO TECLADO Y RATÓN · HAZ CLIC EN EL JUEGO PARA JUGAR · ENTER / ESC: VOLVER';
+    tiny(g, pie, Math.round(W / 2 - tinyW(pie) / 2), 208, '#8a80b0');
   }
 }
 
@@ -285,9 +290,9 @@ class CountryScene {
   init() { this.t = 0; this.sel = 0; playMusic('rumba'); }
   update() {
     this.t++;
-    if (Input.hit('left')) { this.sel = (this.sel + 5) % 6; sfx('select'); }
-    if (Input.hit('right')) { this.sel = (this.sel + 1) % 6; sfx('select'); }
-    if (Input.hit('up') || Input.hit('down')) { this.sel = (this.sel + 3) % 6; sfx('select'); }
+    if (Input.nav('left')) { this.sel = (this.sel + 5) % 6; sfx('select'); }
+    if (Input.nav('right')) { this.sel = (this.sel + 1) % 6; sfx('select'); }
+    if (Input.nav('up') || Input.nav('down')) { this.sel = (this.sel + 3) % 6; sfx('select'); }
     if (Input.hit('pause')) { sfx('back'); goFade(() => new TitleScene()); }
     if (Input.ok() && this.t > 8) { sfx('confirm'); GAME.country = COUNTRIES[this.sel]; GAME.startTime = performance.now(); GAME.continues = 0; stopMusic(); goFade(() => new AirportScene(), .03); }
   }
@@ -372,7 +377,7 @@ class AirportScene extends Cutscene {
     g.fillStyle = OUTL; g.fillRect(640 - camX, 170, 60, 30); g.fillStyle = '#2a4a7a'; g.fillRect(641 - camX, 171, 58, 29); g.fillStyle = '#4a7aba'; g.fillRect(641 - camX, 171, 58, 2); tiny(g, 'PUERTA 12', 652 - camX, 180, '#fff');
     for (const a of this.actors) a.draw(g, camX);
     this.drawOverlay(g);
-    if (this.item) drawItemGet(g, this.item, 'LA CHANCLA DE LA ABUELA', 'ESPECIAL: TECLA L  ·  O  ↓ ↘ → + J');
+    if (this.item) drawItemGet(g, this.item, 'LA CHANCLA DE LA ABUELA', 'ESPECIAL: RUEDA DEL RATÓN ↑');
   }
 }
 
@@ -644,11 +649,11 @@ class StageScene extends Cutscene {
   }
   update() {
     if (this.paused) {
-      if (Input.hit('up')) { this.pauseSel = (this.pauseSel + 2) % 3; sfx('select'); }
-      if (Input.hit('down')) { this.pauseSel = (this.pauseSel + 1) % 3; sfx('select'); }
+      if (Input.nav('up')) { this.pauseSel = (this.pauseSel + 2) % 3; sfx('select'); }
+      if (Input.nav('down')) { this.pauseSel = (this.pauseSel + 1) % 3; sfx('select'); }
       if (Input.hit('pause')) { this.paused = false; sfx('back'); return; }
       if (this.pauseSel === 1) {
-        let ch = 0; if (Input.hit('left')) ch = -1; if (Input.hit('right') || Input.ok()) ch = 1;
+        let ch = 0; if (Input.nav('left')) ch = -1; if (Input.nav('right') || Input.ok()) ch = 1;
         if (ch) { setDiff(GAME.diff + ch); if (this.fight) this.fight.setAI(aiFor(this.st)); }
         return;
       }
@@ -658,8 +663,11 @@ class StageScene extends Cutscene {
     if (Input.hit('pause') && (this.phase === 'fight' || this.phase === 'walk')) { this.paused = true; this.pauseSel = 0; sfx('select'); return; }
     this.world.update();
     if (this.phase === 'walk') {
-      const r = Input.held.right, l = Input.held.left;
-      if (r || l) { this.hero.facing = r ? 1 : -1; this.hero.x = clamp(this.hero.x + (r ? 1.25 : -1.1), 16, WORLD_W); this.hero.anim !== 'walkBag' && (this.hero.anim = 'walkBag'); }
+      // A/D andan sin girar (mira al cursor si se ha usado el ratón), Shift corre
+      const r = Input.held.right, l = Input.held.left, run = Input.held.run ? 1.75 : 1;
+      const look = Input.side(this.hero.x - this.camX);
+      if (look) this.hero.facing = look;
+      if (r || l) { if (!Input.mouse) this.hero.facing = r ? 1 : -1; this.hero.x = clamp(this.hero.x + (r ? 1.25 : -1.1) * run, 16, WORLD_W); this.hero.anim !== 'walkBag' && (this.hero.anim = 'walkBag'); }
       else if (this.hero.anim === 'walkBag') { this.hero.anim = 'standBag'; this.hero.t = 0; }
     }
     if (this.fight) { const F = this.fight; F.update(); if (this.fight === F) this.camX = F.camX; if (this.tut) this.tut++; }
@@ -694,7 +702,7 @@ function drawTutorial(g, t) {
   const x = 64, y = 44, w = 272, h = 56;
   g.globalAlpha = a;
   g.fillStyle = OUTL; g.fillRect(x - 1, y - 1, w + 2, h + 2); g.fillStyle = 'rgba(16,10,34,.92)'; g.fillRect(x, y, w, h); g.fillStyle = '#ffd84a'; g.fillRect(x, y, w, 1);
-  const rows = ['← →  MOVER    ↑  SALTAR    ↓  AGACHARSE', 'J  PUÑO   K  PATADA   L  CHANCLAZO', 'I  SUPER (BARRA AZUL LLENA)', 'MANTÉN  ATRÁS  PARA BLOQUEAR'];
+  const rows = ['A D  MOVER   SHIFT  CORRER   ESPACIO  SALTAR   S  AGACHARSE', 'RATÓN  MIRAR    CLIC IZQ.  PUÑO    CLIC DER.  PATADA', 'RUEDA ↑  CHANCLAZO   RUEDA ↓  CARGAR   F  SÚPER', 'MANTÉN  ATRÁS  PARA BLOQUEAR    W + CLIC  GANCHO'];
   rows.forEach((r, i) => tiny(g, r, Math.round(W / 2 - tinyW(r) / 2), y + 8 + i * 12, i === 3 ? '#9fe8ff' : '#fff'));
   g.globalAlpha = 1;
 }
@@ -731,8 +739,8 @@ class QuickScene {
   init() { this.t = 0; playMusic('rumba'); ambient(null); }
   update() {
     this.t++;
-    if (Input.hit('left')) { this.sel = (this.sel + STAGES.length - 1) % STAGES.length; sfx('select'); }
-    if (Input.hit('right')) { this.sel = (this.sel + 1) % STAGES.length; sfx('select'); }
+    if (Input.nav('left')) { this.sel = (this.sel + STAGES.length - 1) % STAGES.length; sfx('select'); }
+    if (Input.nav('right')) { this.sel = (this.sel + 1) % STAGES.length; sfx('select'); }
     if (Input.hit('pause')) { sfx('back'); goFade(() => new TitleScene()); }
     if (Input.ok() && this.t > 8) { sfx('confirm'); const s = this.sel; goFade(() => new StageScene(s, { mode: 'quick' })); }
   }
