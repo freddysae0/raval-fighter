@@ -76,9 +76,17 @@ function tsprite(str, size, color) {
   const [, mg] = mk(4, 4); mg.font = size + 'px ' + FONT;
   const w = Math.max(1, Math.ceil(mg.measureText(str).width));
   const [tc, tg] = mk(w + 2, size + 4);
-  tg.font = size + 'px ' + FONT; tg.textBaseline = 'top'; tg.fillStyle = color; tg.fillText(str, 1, 1);
-  const d = tg.getImageData(0, 0, tc.width, tc.height), p = d.data, [r, g, b] = rgb(color);
-  for (let i = 0; i < p.length; i += 4) { if (p[i + 3] > 100) { p[i] = r; p[i + 1] = g; p[i + 2] = b; p[i + 3] = 255; } else p[i + 3] = 0; }
+  // A tamaño real el suavizado del navegador rellena los huecos de 1 px (la W y la M salían como bloques):
+  // se dibuja 4 veces más grande y se toma el centro de cada píxel.
+  const SS = 4, [bc, bg] = mk((w + 2) * SS, (size + 4) * SS);
+  bg.font = size * SS + 'px ' + FONT; bg.textBaseline = 'top'; bg.fillStyle = '#fff'; bg.fillText(str, SS, SS);
+  const big = bg.getImageData(0, 0, bc.width, bc.height).data;
+  const d = tg.createImageData(tc.width, tc.height), p = d.data, [r, g, b] = rgb(color);
+  for (let y = 0; y < tc.height; y++) for (let x = 0; x < tc.width; x++) {
+    if (big[((y * SS + (SS >> 1)) * bc.width + x * SS + (SS >> 1)) * 4 + 3] > 127) {
+      const i = (y * tc.width + x) * 4; p[i] = r; p[i + 1] = g; p[i + 2] = b; p[i + 3] = 255;
+    }
+  }
   tg.putImageData(d, 0, 0); tc.tw = w;
   if (_tc.size > 900) _tc.clear();
   _tc.set(key, tc); return tc;
