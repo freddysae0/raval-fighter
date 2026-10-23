@@ -1,6 +1,6 @@
 <h1 align="center">RAVAL FIGHTER</h1>
 
-<p align="center"><b>Una historia de barrio.</b> Juego de lucha arcade 2D en pixel art ambientado en El Raval, Barcelona.</p>
+<p align="center"><b>Una historia de barrio.</b> DEMO: Juego de lucha arcade 2D en pixel art ambientado en El Raval, Barcelona.</p>
 
 <p align="center">
   <a href="https://freddysae0.github.io/raval-fighter/"><img src="https://img.shields.io/badge/▶_Jugar_en_el_navegador-ff5c5c?style=for-the-badge" alt="Jugar"></a>
